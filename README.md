@@ -61,7 +61,6 @@ This project demonstrates how **event-driven design patterns** work in practice 
 Also confirm the AWS CLI is configured (`aws configure`) with credentials that have sufficient permissions to manage **Lambda functions**, **S3**, **SES**, **DynamoDB**, and **IAM resources**.
 
 ## How to Use
-
 1. **Create an S3 bucket** using the AWS Management Console.  
 
 2. **Edit the environment variable values** in the Lambda function (**SES_SENDER_EMAIL**, **SES_RECIPIENT_EMAIL**).
