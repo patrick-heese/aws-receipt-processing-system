@@ -96,6 +96,7 @@ aws-receipt-processing-system/
 ├── README.md
 └── .gitignore
 ```  
+
 ## Screenshot
 ![Receipt Processing Application](assets/screenshot.png)
 
