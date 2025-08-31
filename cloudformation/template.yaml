@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Receipt Processing App (Lambda, DynamoDB, SES, IAM).
+  Note: S3 bucket and S3 event notifications must be created manually.
+
+Parameters:
+  ReceiptsBucketName:
+    Type: String
+    Description: "Name of the pre-existing S3 bucket for receipts"
+
+Resources:
+  # DynamoDB Table
+  ReceiptsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Receipts
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: receipt_id
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: receipt_id
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+
+  # SES Email Identity
+  SESEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: "user@example.com"
+
+  # IAM Role for Lambda
+  ReceiptProcessingLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ReceiptProcessingLambdaRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonSESFullAccess
+        - arn:aws:iam::aws:policy/AmazonTextractFullAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:*
+                Resource: !GetAtt ReceiptsTable.Arn
+        - PolicyName: S3ReadAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${ReceiptsBucketName}"
+                  - !Sub "arn:aws:s3:::${ReceiptsBucketName}/*"
+
+  # Lambda Function
+  ReceiptProcessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ReceiptProcessor
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Handler: receiptprocessor_lambda.lambda_handler
+      CodeUri: ../src/receiptprocessor_function/
+      MemorySize: 512
+      Timeout: 180
+      Role: !GetAtt ReceiptProcessingLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: Receipts
+          SES_SENDER_EMAIL: "user@example.com"
+          SES_RECIPIENT_EMAIL: "user@example.com"
+
+  # Lambda Permission for S3 bucket (allows manual S3 event notification)
+  ReceiptProcessorS3Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReceiptProcessor
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub "arn:aws:s3:::${ReceiptsBucketName}"
+
+Outputs:
+  ReceiptsBucketName:
+    Description: "Name of the pre-existing S3 bucket"
+    Value: !Ref ReceiptsBucketName
+
+  DynamoDBTableName:
+    Description: "DynamoDB table name"
+    Value: !Ref ReceiptsTable
+  DynamoDBTableArn:
+    Description: "DynamoDB table ARN"
+    Value: !GetAtt ReceiptsTable.Arn
+
+  SESEmailIdentityValue:
+    Description: "SES Email Identity"
+    Value: !Ref SESEmailIdentity
+
+  LambdaFunctionName:
+    Description: "Lambda function name"
+    Value: !Ref ReceiptProcessor
+  LambdaFunctionArn:
+    Description: "Lambda function ARN"
+    Value: !GetAtt ReceiptProcessor.Arn
+
+  LambdaRoleName:
+    Description: "Lambda IAM role name"
+    Value: !Ref ReceiptProcessingLambdaRole
+  LambdaRoleArn:
+    Description: "Lambda IAM role ARN"
+    Value: !GetAtt ReceiptProcessingLambdaRole.Arn
