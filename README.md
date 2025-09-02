@@ -18,7 +18,7 @@ This project demonstrates how **event-driven design patterns** work in practice 
 ## Skills Applied
 - Designing and implementing serverless architectures.    
 - Configuring event-driven triggers between AWS services.  
-- Building IAM roles and policies with least-privilege access.  
+- Building IAM roles and policies with least-privilege access, scoped to application resources (managed policies used where practical).  
 - Integrating AWS Textract for document analysis.  
 - Persisting structured data in DynamoDB.  
 - Automating notifications with SES.  
