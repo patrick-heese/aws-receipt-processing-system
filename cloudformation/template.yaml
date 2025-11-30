@@ -13,6 +13,8 @@ Resources:
   # DynamoDB Table
   ReceiptsTable:
     Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       TableName: Receipts
       BillingMode: PAY_PER_REQUEST
@@ -30,6 +32,8 @@ Resources:
   # SES Email Identity
   SESEmailIdentity:
     Type: AWS::SES::EmailIdentity
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       EmailIdentity: "user@example.com"
 
